@@ -32,3 +32,15 @@ variable "db_subnet_cidrs" {
   type        = list(string)
   default     = ["10.0.21.0/24", "10.0.22.0/24"]
 }
+
+variable "app_port" {
+  description = "Puerto en el que escucha la aplicación en las instancias EC2"
+  type        = number
+  default     = 80
+}
+
+variable "db_port" {
+  description = "Puerto de PostgreSQL en RDS"
+  type        = number
+  default     = 5432
+}
