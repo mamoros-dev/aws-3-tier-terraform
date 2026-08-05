@@ -44,3 +44,27 @@ variable "db_port" {
   type        = number
   default     = 5432
 }
+
+variable "instance_type" {
+  description = "Tipo de instancia EC2 para el Auto Scaling Group"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "asg_desired_capacity" {
+  description = "Numero deseado de instancias en el ASG"
+  type        = number
+  default     = 2
+}
+
+variable "asg_min_size" {
+  description = "Numero minimo de instancias en el ASG"
+  type        = number
+  default     = 2
+}
+
+variable "asg_max_size" {
+  description = "Numero maximo de instancias en el ASG"
+  type        = number
+  default     = 4
+}
