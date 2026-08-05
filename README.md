@@ -37,15 +37,14 @@ para ver qué variables necesita).
 ![Tabla DynamoDB para el locking del estado](docs/images/dynamodb-locks.png)
     > Esta tabla es la que evita que dos `apply` se ejecuten a la vez sobre el mismo estado. Cuando lanzo un `apply`, Terraform escribe un lock aquí antes de tocar nada; si alguien (o yo mismo desde otro sitio) intentara aplicar algo al mismo tiempo, le saldría un error de estado bloqueado en vez de corromper el archivo. Solo estoy yo trabajando en esto, pero es el mismo mecanismo que usaría un equipo entero, y quería tenerlo desde el principio en vez de añadirlo después.
 
-+ El ALB funcionando en ambas AZs con subnet públicas:
++ El ALB funcionando en ambas AZs(eu-west-1a/eu-west-1b) con subnet públicas:
 ![ALB en ambas AZs](docs/images/alb.png)
 
-+ El Auto Scaling Group manteniendo sus 2 instancias sanas:
++ El Auto Scaling Group manteniendo sus 2 instancias sanas en ambas AZs:
 ![Auto Scaling group](docs/images/autoscaling.png)
 
 + Y el Target Group confirmando que ambas pasan los health checks del Load Balancer:
 ![Target Group con las dos instancias healthy](docs/images/target-group-healthy.png)
-
 
 
 ## Prueba de que funciona de verdad, no solo en el diagrama
