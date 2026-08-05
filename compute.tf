@@ -37,7 +37,29 @@ resource "aws_launch_template" "app" {
     systemctl start amazon-ssm-agent
     systemctl enable httpd
     systemctl start httpd
-    echo "<?php phpinfo(); ?>" > /var/www/html/index.php
+
+    cat > /var/www/html/index.php << 'PHPEOF'
+    <?php
+    $token = shell_exec("curl -s -X PUT 'http://169.254.169.254/latest/api/token' -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600'");
+    $az = shell_exec("curl -s -H 'X-aws-ec2-metadata-token: $token' http://169.254.169.254/latest/meta-data/placement/availability-zone");
+
+    $conn = pg_connect("host=${aws_db_instance.main.address} dbname=${var.db_name} user=${var.db_username} password=${var.db_password}");
+    pg_query($conn, "CREATE TABLE IF NOT EXISTS visits (id SERIAL PRIMARY KEY, count INT DEFAULT 0)");
+    $check = pg_query($conn, "SELECT count FROM visits LIMIT 1");
+    if (pg_num_rows($check) == 0) {
+        pg_query($conn, "INSERT INTO visits (count) VALUES (1)");
+        $count = 1;
+    } else {
+        pg_query($conn, "UPDATE visits SET count = count + 1");
+        $result = pg_query($conn, "SELECT count FROM visits LIMIT 1");
+        $row = pg_fetch_assoc($result);
+        $count = $row['count'];
+    }
+    ?>
+    <h1>Proyecto 2 - AWS 3-Tier con Terraform</h1>
+    <p>Servido desde la zona de disponibilidad: <strong><?php echo trim($az); ?></strong></p>
+    <p>Numero de visitas (guardado en RDS): <strong><?php echo $count; ?></strong></p>
+    PHPEOF
   EOF
   )
 
