@@ -32,7 +32,9 @@ resource "aws_launch_template" "app" {
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    dnf install -y httpd php php-pgsql
+    dnf install -y httpd php php-pgsql amazon-ssm-agent
+    systemctl enable amazon-ssm-agent
+    systemctl start amazon-ssm-agent
     systemctl enable httpd
     systemctl start httpd
     echo "<?php phpinfo(); ?>" > /var/www/html/index.php
