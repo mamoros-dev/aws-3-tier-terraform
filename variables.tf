@@ -68,3 +68,33 @@ variable "asg_max_size" {
   type        = number
   default     = 4
 }
+
+variable "db_name" {
+  description = "Nombre de la base de datos inicial en RDS"
+  type        = string
+  default     = "proyecto2db"
+}
+
+variable "db_username" {
+  description = "Usuario administrador de la base de datos"
+  type        = string
+  default     = "dbadmin"
+}
+
+variable "db_password" {
+  description = "Contraseña del usuario administrador de RDS"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_instance_class" {
+  description = "Clase de instancia de RDS"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_engine_version" {
+  description = "Version de PostgreSQL"
+  type        = string
+  default     = "16"
+}
