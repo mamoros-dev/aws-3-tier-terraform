@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "github_actions_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:mamoros-dev/aws-3-tier-terraform:*"]
+      values   = ["repo:mamoros-dev@55656115/aws-3-tier-terraform@1322122992:*"]
     }
   }
 }
