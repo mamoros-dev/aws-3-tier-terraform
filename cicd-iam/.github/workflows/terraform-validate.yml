@@ -1,0 +1,45 @@
+name: Terraform Validate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+      - 'cicd-iam/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+      - 'cicd-iam/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Terraform Format Check (infra)
+        run: terraform fmt -check -recursive infra/
+
+      - name: Terraform Format Check (cicd-iam)
+        run: terraform fmt -check -recursive cicd-iam/
+
+      - name: Terraform Init (infra)
+        run: terraform -chdir=infra init -backend=false
+
+      - name: Terraform Validate (infra)
+        run: terraform -chdir=infra validate
+
+      - name: Terraform Init (cicd-iam)
+        run: terraform -chdir=cicd-iam init -backend=false
+
+      - name: Terraform Validate (cicd-iam)
+        run: terraform -chdir=cicd-iam validate
