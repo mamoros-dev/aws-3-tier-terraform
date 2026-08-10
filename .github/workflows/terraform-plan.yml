@@ -36,6 +36,8 @@ jobs:
 
       - name: Terraform Plan (infra)
         id: plan
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_db_password }}
         run: terraform -chdir=infra plan -no-color -out=tfplan.binary
         continue-on-error: true
 
