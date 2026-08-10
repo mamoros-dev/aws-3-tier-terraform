@@ -7,12 +7,14 @@ on:
     paths:
       - 'infra/**'
       - 'cicd-iam/**'
+      - '.github/workflows/terraform-validate.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'infra/**'
       - 'cicd-iam/**'
+      - '.github/workflows/terraform-validate.yml'
 
 jobs:
   validate:
