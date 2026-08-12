@@ -8,7 +8,15 @@ terraform {
     }
   }
 }
-
 provider "aws" {
   region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project     = "aws-3-tier-terraform"
+      Environment = "dev"
+      ManagedBy   = "terraform"
+      Owner       = "miguel"
+    }
+  }
 }
