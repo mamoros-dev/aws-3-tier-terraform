@@ -70,28 +70,13 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
-    sid    = "InfraProvisioning"
+    sid    = "InfraProvisioningRegional"
     effect = "Allow"
     actions = [
       "ec2:*",
       "elasticloadbalancing:*",
       "rds:*",
-      "iam:GetRole",
-      "iam:PassRole",
-      "iam:CreateRole",
-      "iam:DeleteRole",
-      "iam:AttachRolePolicy",
-      "iam:DetachRolePolicy",
-      "iam:PutRolePolicy",
-      "iam:DeleteRolePolicy",
-      "iam:GetRolePolicy",
-      "iam:CreateInstanceProfile",
-      "iam:DeleteInstanceProfile",
-      "iam:AddRoleToInstanceProfile",
-      "iam:RemoveRoleFromInstanceProfile",
-      "iam:GetInstanceProfile",
-      "iam:TagRole",
-      "iam:ListInstanceProfilesForRole"
+      "autoscaling:*"
     ]
     resources = ["*"]
 
@@ -101,8 +86,36 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       values   = ["eu-west-1"]
     }
   }
-}
 
+  statement {
+    sid    = "InfraProvisioningIAMGlobal"
+    effect = "Allow"
+    actions = [
+      "iam:GetRole",
+      "iam:PassRole",
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:AttachRolePolicy",
+      "iam:DetachRolePolicy",
+      "iam:PutRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
+      "iam:CreateInstanceProfile",
+      "iam:DeleteInstanceProfile",
+      "iam:AddRoleToInstanceProfile",
+      "iam:RemoveRoleFromInstanceProfile",
+      "iam:GetInstanceProfile",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:TagInstanceProfile",
+      "iam:UntagInstanceProfile",
+      "iam:ListInstanceProfilesForRole"
+    ]
+    resources = ["*"]
+  }
+}
 resource "aws_iam_role_policy" "github_actions_permissions" {
   name   = "github-actions-terraform-permissions"
   role   = aws_iam_role.github_actions.id
