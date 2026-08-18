@@ -1,0 +1,44 @@
+name: "Security & Quality Gate (DevSecOps)"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Permite ejecutarlo manualmente desde la interfaz de GitHub
+
+jobs:
+  iac-security-scan:
+    name: "TFLint & Checkov Scan"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infra
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 1. Análisis de mejores prácticas con TFLint
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.0
+
+      - name: Ejecutar TFLint
+        run: |
+          tflint --init
+          tflint -f compact
+
+      # 2. Análisis de Seguridad SAST con Checkov
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Checkov
+        run: pip install checkov
+
+      - name: Ejecutar Checkov en ./infra
+        run: |
+          checkov -d . --framework terraform --soft-fail
