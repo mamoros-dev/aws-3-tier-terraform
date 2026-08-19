@@ -6,14 +6,14 @@
 
 + La idea era aprender IaC sin tener que pelearme a la vez con una arquitectura nueva — así cualquier problema que me saliera sabía que era de Terraform, no de la arquitectura en sí.
 
-+ Más adelante añadí un pipeline de CI/CD con GitHub Actions que automatiza el despliegue de este mismo código: valida sintaxis, calcula el plan en cada Pull Request y lo comenta para revisión, y aplica los cambios solo tras aprobación manual una vez mergeado a `main`.
++ Más adelante añadí un pipeline de **CI/CD DevSecOps** con GitHub Actions que automatiza el despliegue de este mismo código: valida sintaxis y formato, ejecuta **análisis estático de seguridad (SAST / IaC Scanning)**, calcula el plan en cada Pull Request, lo comenta para revisión y aplica los cambios solo tras aprobación manual una vez mergeado a `main`.
 
 ## Cómo está montado
 
-+ Internet → ALB (subred pública) → Target Group → Auto Scaling Group (subred privada de app) → RDS PostgreSQL (subred privada de datos):
++ **Internet → ALB (subred pública) → Target Group → Auto Scaling Group (subred privada de app) → RDS PostgreSQL (subred privada de datos):**
     - VPC con 6 subredes repartidas en 2 AZs (públicas, app, datos)
     - Una NAT Gateway (por coste, lo explico más abajo)
-    - Security Groups encadenados: alb → app → rds, cada uno referenciando al anterior por ID, no por IP
+    - Security Groups encadenados: `alb` → `app` → `rds`, cada uno referenciando al anterior por ID, no por IP
     - IAM Role + Instance Profile para entrar por Session Manager, sin SSH ni claves
     - Auto Scaling Group con 2 instancias mínimo, repartidas en las 2 AZs
     - ALB con health checks al Target Group
@@ -22,10 +22,10 @@
 + Estructura del repositorio:
 ```bash
 aws-3-tier-terraform/
-├── .github/workflows/     # Los 3 workflows del pipeline (validate, plan, apply)
-├── infra/                 # Toda la infraestructura de este README
+├── .github/workflows/     # Workflows del pipeline CI/CD/DevSecOps (validate, security, plan, apply)
+├── infra/                 # Toda la infraestructura en código HCL
 └── cicd-iam/              # El Role de OIDC que usa GitHub Actions para autenticarse en AWS
-                            # (se gestiona siempre a mano, nunca por el propio pipeline)
+                           # (se gestiona siempre a mano, nunca por el propio pipeline)
 ```
 
 ## Pipeline de CI/CD
@@ -33,13 +33,18 @@ aws-3-tier-terraform/
 ```mermaid
 flowchart TD
     A[Developer: git push a rama feature/] --> B{Evento}
-    B -->|push a main o PR<br/>toca infra/ o cicd-iam/| C[Terraform Validate]
+    B -->|push a main o PR<br/>toca infra/ o cicd-iam/| C[Terraform Validate & Lint]
+    C --> C1[fmt -check + validate<br/>tflint]
+    C1 --> S[DevSecOps: IaC Security Scanning]
+    S --> S1[Checkov / Trivy Scan<br/>Análisis de vulnerabilidades & SAST]
+    
     B -->|Pull Request<br/>toca infra/| D[Terraform Plan]
-    C --> C1[fmt -check + validate<br/>sin credenciales AWS]
+    S1 --> D
     D --> D1[Auth vía OIDC]
     D1 --> D2[terraform plan]
     D2 --> D3[Comentario automático en el PR]
-    D3 --> E{Revisión humana<br/>del plan}
+    D3 --> E{Revisión humana<br/>del plan & seguridad}
+    
     E -->|Aprieta Merge| F[Push a main]
     F --> G{Terraform Apply}
     G -->|paths: infra/**| H[Auth vía OIDC]
@@ -50,17 +55,16 @@ flowchart TD
 
 | Workflow | Se dispara cuando... | Qué hace | Toca AWS |
 |---|---|---|---|
-| `terraform-validate.yml` | `push` a `main` **o** `pull_request`, si cambia `infra/**`, `cicd-iam/**` o el propio archivo | `fmt -check` + `validate` en ambos módulos | No |
+| `terraform-validate.yml` | `push` a `main` **o** `pull_request`, si cambia `infra/**`, `cicd-iam/**` o el propio archivo | `fmt -check` + `validate` + `tflint` | No |
+| `security-scan.yml` | `pull_request` o `push` en ramas de integración | Escaneo SAST de IaC con **Checkov / Trivy** buscando misconfigurations y riesgos de seguridad | No |
 | `terraform-plan.yml` | Solo `pull_request`, si cambia `infra/**` | `terraform plan` real + comentario en el PR | Sí (solo lectura, vía OIDC) |
 | `terraform-apply.yml` | Solo `push` a `main` (al mergear), si cambia `infra/**` | `terraform apply -auto-approve`, pausado hasta aprobación manual | Sí (escritura, vía OIDC) |
 
-+ **Autenticación vía OIDC, no Access Keys.** GitHub Actions no guarda ninguna credencial permanente de AWS. En su lugar, cada ejecución pide un token temporal a GitHub, que AWS cambia por credenciales válidas solo unos minutos, mediante un IAM Role (`cicd-iam/`) con una Trust Policy que solo confía en ejecuciones de este repositorio concreto.
-
-+ **`plan` y `apply` separados en workflows distintos.** El `plan` es información para decidir (se ejecuta en cada PR, antes de mergear). El `apply` es la acción real (se ejecuta después de mergear). Nunca se ejecuta un `apply` sin que antes haya existido un `plan` revisado en un PR.
-
-+ **Aprobación manual obligatoria antes del apply.** El job de `apply` está vinculado a un GitHub Environment llamado `production`, configurado con "Required reviewers". Aunque el push a `main` dispara el workflow automáticamente, la ejecución real de `terraform apply` se queda pausada hasta que alguien aprueba explícitamente desde la interfaz de GitHub.
-
-+ **`cicd-iam/` nunca se gestiona por el propio pipeline.** Es la pieza que da permisos a todo lo demás, así que se aplica siempre manualmente desde terminal — evita el problema de "quién le da permiso al que da los permisos".
++ **Pilares de Seguridad Implementados:**
+    - **Escaneo Continuo de Código (IaC Scanning):** Integración de herramientas SAST (Checkov / Trivy) para detectar configuraciones inseguras (ej. puertos abiertos 0.0.0.0/0 indebidos, volúmenes sin cifrar, políticas IAM con comodines *).
+    - **Autenticación OIDC sin Secretos de Larga Duración:** GitHub Actions no guarda ninguna credencial permanente de AWS. Utiliza tokens temporales de STS mediante un IAM Role con una Trust Policy restringida por repositorio.
+    - **Aprobación Manual Obligatoria (Gatekeeper):** El despliegue a producción requiere aprobación humana explícita en el GitHub Environment production.
+    - **Inyección Segura de Secretos:** La contraseña de la base de datos se inyecta en memoria RAM mediante TF_VAR_db_password desde GitHub Secrets, sin quedar expuesta en el código ni en logs.
 
 ## Cómo levantarlo
 + **Manualmente:**
@@ -69,15 +73,14 @@ terraform init
 terraform plan -out=tfplan
 terraform apply "tfplan"
 ```
-> Hace falta un `terraform.tfvars` con al menos `db_password` puesto (mira `terraform.tfvars.example`
-para ver qué variables necesita).
+> Hace falta un `terraform.tfvars` con al menos `db_password` puesto (mira `terraform.tfvars.example` para ver qué variables necesita).
 
-+ **Vía el pipeline:**
-1. Cambios en una rama nueva → Pull Request contra `main`.
-2. El pipeline valida y comenta el `plan` automáticamente en el PR.
-3. Reviso el plan comentado y mergeo si está correcto.
-4. El pipeline dispara el `apply`, pero queda pausado esperando mi aprobación manual en la pestaña Actions.
-5. Apruebo → se aplica de verdad.
++ **Vía Pipeline DevSecOps:**
+    1. Crear una rama de característica → Pull Request contra `main`.
+    2. El pipeline valida sintaxis, analiza la seguridad del código con **Checkov/Trivy** y comenta el `plan` en el PR.
+    3. Revisar el análisis de seguridad y el plan comentado; luego, hacer Merge.
+    4. El pipeline dispara el `apply`, pero queda pausado esperando aprobación manual en la pestaña Actions.
+    5. Aprobar → La infraestructura se despliega en AWS.
 
 ## Infraestructura desplegada y funcionando
 
@@ -101,6 +104,12 @@ para ver qué variables necesita).
 + **Esta vez, toda esta infraestructura la desplegó el pipeline, no yo a mano** — el primer `apply` real disparado por GitHub Actions tras aprobar el Environment `production`.
 
 ## Prueba de que funciona de verdad, no solo en el diagrama
+
++ Escaneo de Seguridad en Pipeline (Checkov / Trivy):
+    - Shift Left Security: Los análisis de seguridad de código IaC se ejecutan en la fase más temprana posible (en la Pull Request) antes de interactuar con la nube de AWS.
+![pipeline Security & Quality Gate DevSecOps](./docs/images/workflow-devsecops.png)  
+![workflow pipeline devsecops](./docs/images/security-qualityscan.png)  
+
 
 + En vez de dejar un `phpinfo()` a secas, hice una página sencilla que muestra en qué zona de disponibilidad está corriendo la instancia que te ha tocado, y un contador de visitas guardado en RDS. 
 + Refrescando varias veces, se ve el ALB repartiendo entre las dos AZs y el contador subiendo de verdad desde la base de datos, no simulado.
@@ -165,7 +174,7 @@ Terraform has compared your real infrastructure against your configuration and f
     - **`terraform plan` colgado 10 minutos esperando input interactivo.** La variable `db_password` no tenía valor en el pipeline, y Terraform preguntaba por teclado — en una VM sin terminal, eso se traduce en un cuelgue silencioso. Resuelto pasando el valor como GitHub Secret (`TF_VAR_db_password`) y forzando `-input=false` para que falle rápido en vez de colgarse, si algo así vuelve a pasar.
     - **Permisos IAM insuficientes, descubiertos uno a uno contra ejecuciones reales:** `iam:CreateRole` fallaba porque una condición de restricción por región se aplicaba también a IAM (que es un servicio global, sin región); tras corregirlo, fueron apareciendo `iam:ListRolePolicies`, `iam:TagInstanceProfile`, y finalmente el servicio completo `autoscaling:*`, que no se había contemplado en el diseño inicial de permisos. Cada fallo se corrigió en `cicd-iam/` y se relanzó el job con `gh run rerun --failed`, que retomó el `apply` exactamente donde se había quedado, sin recrear recursos ya aplicados con éxito.
 
-## Qué le añadiría si esto fuera a producción
+## Mejoras
 
 - `instance_refresh` en el ASG, para que al cambiar el Launch Template las instancias se vayan reemplazando solas de una en una, sin tener que terminarlas a mano como hice yo aquí.
 - NAT Gateway y RDS Multi-AZ, para quitar los puntos únicos de fallo que dejé por ahorrar coste.
@@ -175,7 +184,7 @@ Terraform has compared your real infrastructure against your configuration and f
 
 ## Stack
 
-+ Terraform 1.15 · AWS (VPC, EC2, ASG, ALB, RDS, IAM) · Systems Manager · Backend remoto en S3 + DynamoDB · GitHub Actions · OIDC · GitHub Environments
++ Terraform 1.15 · Checkov · Trivy · TFLint · AWS (VPC, EC2, ASG, ALB, RDS, IAM) · Systems Manager · Backend remoto en S3 + DynamoDB · GitHub Actions · OIDC · GitHub Environments
 
 ## Estado
 
