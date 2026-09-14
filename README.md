@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Dependabot](https://img.shields.io/badge/Dependabot-active-0288d1?logo=dependabot)](./.github/dependabot.yml)
 
-🇪🇸 [Versión en español](./docs/es/README-es.md)  
+🇪🇸 [Spanish Version and more info](./docs/es/README-es.md)  
 
 + Terraform recreation of the 3-tier web architecture I first built manually in
 [Project 1](https://github.com/mamoros-dev/aws-3-tier-web-architecture).
