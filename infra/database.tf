@@ -1,3 +1,4 @@
+# --- Collects the data subnets so that RDS knows where to deploy ---
 # --- Agrupa las subredes de datos para que RDS sepa donde desplegarse ---
 resource "aws_db_subnet_group" "main" {
   name       = "proyecto2-db-subnet-group"
@@ -8,6 +9,7 @@ resource "aws_db_subnet_group" "main" {
   }
 }
 
+# --- RDS PostgreSQL instance ---
 # --- La instancia RDS PostgreSQL ---
 resource "aws_db_instance" "main" {
   identifier     = "proyecto2-db"

@@ -1,3 +1,5 @@
+# --- Terraform Providers Configuration for CICD ---
+# --- Configuración de los Proveedores de Terraform para CICD ---
 terraform {
   required_providers {
     aws = {

@@ -1,3 +1,5 @@
+# --- Terraform Configuration ---
+# --- Configuración de Terraform ---
 terraform {
   required_version = ">= 1.9.0"
 
@@ -8,6 +10,9 @@ terraform {
     }
   }
 }
+
+# --- AWS Provider Configuration ---
+# --- Configuración del proveedor de AWS ---
 provider "aws" {
   region = var.aws_region
 

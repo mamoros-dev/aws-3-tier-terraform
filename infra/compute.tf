@@ -1,3 +1,5 @@
+# --- AMI for the EC2 instances ---
+# --- AMI para las instancias EC2 ---
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -13,6 +15,8 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+# --- Launch Template for the EC2 instances ---
+# --- Plantilla de lanzamiento para las instancias EC2 ---
 resource "aws_launch_template" "app" {
   name_prefix   = "proyecto2-app-"
   image_id      = data.aws_ami.amazon_linux.id
@@ -71,6 +75,8 @@ resource "aws_launch_template" "app" {
   }
 }
 
+# --- Auto Scaling Group for the EC2 instances ---
+# --- Grupo de Auto Scaling para las instancias EC2 ---
 resource "aws_autoscaling_group" "app" {
   name                = "proyecto2-asg"
   vpc_zone_identifier = aws_subnet.app[*].id

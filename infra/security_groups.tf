@@ -1,4 +1,5 @@
 # --- Security Group del ALB: recibe tráfico de internet ---
+# --- Group de seguridad del ALB: recibe tráfico de internet ---
 resource "aws_security_group" "alb" {
   name        = "proyecto2-alb-sg"
   description = "Permite HTTP entrante desde internet hacia el ALB"
@@ -25,6 +26,7 @@ resource "aws_security_group" "alb" {
   }
 }
 
+# --- Security Group for the application instances: only receives from the ALB ---
 # --- Security Group de las instancias de aplicación: solo recibe del ALB ---
 resource "aws_security_group" "app" {
   name        = "proyecto2-app-sg"
@@ -52,6 +54,7 @@ resource "aws_security_group" "app" {
   }
 }
 
+# --- Security Group for the RDS: only receives from the application instances ---
 # --- Security Group de RDS: solo recibe de las instancias de aplicación ---
 resource "aws_security_group" "rds" {
   name        = "proyecto2-rds-sg"

@@ -1,13 +1,18 @@
+# --- GitHub Actions Workflow for Security and Quality Gate (DevSecOps) ---
+# --- Flujo de trabajo de GitHub Actions para Seguridad y Puerta de Calidad (DevSecOps) ---
 name: "Security & Quality Gate (DevSecOps)"
-
+# --- This workflow is triggered on push and pull request events to the main branch, as well as manual execution from the GitHub interface. ---
+# --- Este flujo de trabajo se activa en eventos de push y pull request a la rama principal, así como en la ejecución manual desde la interfaz de GitHub. ---
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # Permite ejecutarlo manualmente desde la interfaz de GitHub
+  workflow_dispatch: # Allows manual execution from the GitHub interface / Permite la ejecución manual desde la interfaz de GitHub
 
 jobs:
+# --- Job for Infrastructure as Code (IaC) Security Scanning ---
+# --- Trabajo para el Escaneo de Seguridad de Infraestructura como Código (IaC) ---
   iac-security-scan:
     name: "TFLint & Checkov Scan"
     runs-on: ubuntu-latest
@@ -19,7 +24,7 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # 1. Análisis de mejores prácticas con TFLint
+      # 1. Analysis for the best practices with TFLint / Análisis de mejores prácticas con TFLint
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
         with:
@@ -30,7 +35,7 @@ jobs:
           tflint --init
           tflint -f compact
 
-      # 2. Análisis de Seguridad SAST con Checkov
+      # 2. Analysis for Security SAST with Checkov / Análisis de Seguridad SAST con Checkov
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:

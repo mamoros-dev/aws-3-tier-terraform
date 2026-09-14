@@ -1,4 +1,5 @@
-# --- El Load Balancer en sí ---
+# --- Load Balancer configuration ---
+# --- Configuración del Load Balancer ---
 resource "aws_lb" "main" {
   name               = "proyecto2-alb"
   internal           = false
@@ -11,6 +12,7 @@ resource "aws_lb" "main" {
   }
 }
 
+# --- Target Group: where the ALB forwards traffic ---
 # --- Target Group: a donde el ALB reenvia el trafico ---
 resource "aws_lb_target_group" "app" {
   name     = "proyecto2-app-tg"
@@ -33,6 +35,7 @@ resource "aws_lb_target_group" "app" {
   }
 }
 
+# --- Listener: listens on port 80 and forwards to the Target Group ---
 # --- Listener: escucha en el puerto 80 y reenvia al Target Group ---
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn

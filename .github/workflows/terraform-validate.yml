@@ -1,5 +1,8 @@
+# --- GitHub Actions Workflow for Terraform Validation ---
+# --- Flujo de trabajo de GitHub Actions para la Validación de Terraform ---
 name: Terraform Validate
-
+# --- This workflow is triggered on push and pull request events to the main branch, as well as manual execution from the GitHub interface. ---
+# --- Este flujo de trabajo se activa en eventos de push y pull request a la rama principal, así como en la ejecución manual desde la interfaz de GitHub. ---
 on:
   push:
     branches:
@@ -17,31 +20,42 @@ on:
       - '.github/workflows/terraform-validate.yml'
 
 jobs:
+# --- Jobs for Terraform Validation ---
+# --- Trabajos para la Validación de Terraform ---
   validate:
     runs-on: ubuntu-latest
     steps:
+      # --- Checkout the repository ---
+      # --- Hacer checkout del repositorio ---
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      # --- Setup Terraform ---
+      # --- Configurar Terraform ---
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.15.8"
-
+      # --- Terraform Format Check and Validation ---
+      # --- Comprobación de Formato y Validación de Terraform ---
       - name: Terraform Format Check (infra)
         run: terraform fmt -check -recursive infra/
-
+      # --- Terraform Init and Validate for infra ---
+      # --- Inicialización y Validación de Terraform para infra ---
       - name: Terraform Format Check (cicd-iam)
         run: terraform fmt -check -recursive cicd-iam/
-
+      # --- Terraform Init and Validate for cicd-iam ---
+      # --- Inicialización y Validación de Terraform para cicd-iam ---
       - name: Terraform Init (infra)
         run: terraform -chdir=infra init -backend=false
-
+      # --- Terraform Validate for infra ---
+      # --- Validación de Terraform para infra ---
       - name: Terraform Validate (infra)
         run: terraform -chdir=infra validate
-
+      # --- Terraform Init and Validate for cicd-iam ---
+      # --- Inicialización y Validación de Terraform para cicd-iam ---
       - name: Terraform Init (cicd-iam)
         run: terraform -chdir=cicd-iam init -backend=false
-
+      # --- Terraform Validate for cicd-iam ---
+      # --- Validación de Terraform para cicd-iam ---
       - name: Terraform Validate (cicd-iam)
         run: terraform -chdir=cicd-iam validate
