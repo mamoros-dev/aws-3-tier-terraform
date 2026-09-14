@@ -6,7 +6,9 @@
 🇪🇸 [Versión en español](./docs/es/README-es.md)  
 
 + Terraform recreation of the 3-tier web architecture I first built manually in
-[Project 1](https://github.com/mamoros-dev/aws-3-tier-web-architecture): ALB, Auto Scaling Group and RDS PostgreSQL inside a 2-AZ VPC, with a remote Terraform state backend on S3 + DynamoDB.
+[Project 1](https://github.com/mamoros-dev/aws-3-tier-web-architecture).
+
++ 3-tier web architecture (ALB → Auto Scaling Group → RDS) deployed on AWS with Terraform, with a GitHub Actions CI/CD pipeline that validates, plans, and applies changes automatically and under control, authenticating against AWS via OIDC (no long-lived credentials).
 
     ![Diagrama 3-tier web architecture](docs/images/01-diagrama-architecture.png)   
 
@@ -102,7 +104,7 @@ cp terraform.tfvars.example terraform.tfvars
 
 terraform init
 erraform plan -out=tfplan
-terraform apply "tfplan"t
+terraform apply "tfplan" 
 ```
 > None of the pipeline pieces (GitHub Actions, cicd-iam/, Secrets...) are needed for this option. Just Terraform and your own AWS credentials (profile set via AWS_PROFILE).
 
@@ -112,32 +114,56 @@ terraform apply "tfplan"t
 
 1. Manually apply the cicd-iam/ folder to create the OIDC IAM Role (only needed once, this piece is always managed by hand):
 ```bash
+git clone https://github.com/mamoros-dev/aws-3-tier-terraform.git
 cd cicd-iam
-
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars and set at least db_password
-
 terraform init
-erraform plan -out=tfplan
-terraform apply "tfplan"
+terraform apply
 ```
 
-2. Once finished, the `alb_dns_name` output gives you the public URL to test the app.
+2. Configure in the GitHub repository:
+    - Secret `TF_VAR_DB_PASSWORD` with the RDS password
+    - Variable `AWS_ACCOUNT_ID` with your AWS account ID
+    - An Environment named `production` with "Required reviewers" enabled
+    - Branch protection on `main` with "Require a pull request before merging"
 
-3. To tear everything down and avoid ongoing costs:
+3. To deploy or update the infrastructure (infra/) once the above is configured:
+    - The pipeline never triggers on its own — it needs a real change (even a trivial commit) inside infra/, submitted through a Pull Request:
 ```bash
-terraform plan -destroy -out=tfplan-destroy
-terraform apply "tfplan-destroy"
+git checkout -b feat/my-change
+# modify something inside infra/
+git add -A
+git commit -m "feat: my change"
+git push -u origin feat/my-change
+gh pr create --base main
 ```
+
+4. Opening the PR automatically triggers `Terraform Validate` and `Terraform Plan`, which comments the plan result on the PR itself.
+
+5. Review the commented plan and merge if it looks correct: `gh pr merge --squash --delete-branch`
+
+6. The merge triggers `Terraform Apply`, which stays paused in GitHub's Actions tab waiting for your approval on the `production` Environment.
+
+7. You approve → it gets deployed for real. Verify the result with the outputs:
+```bash
+cd infra
+terraform output -raw alb_dns_name
+curl <alb_dns_name>
+```
+> If you just want to redeploy the infrastructure as-is (for example, after having destroyed it), a trivial change in any file under `infra/` is enough to activate the pipeline's `paths: infra/**` filter and follow the same PR → plan → merge → approval → apply flow.
 
 ## How to use the project
 
 + Open the URL from the `alb_dns_name` output in your browser. You'll see the availability zone that served your request and a visit counter stored in RDS — refresh a few times to see the load balancing across AZs.
 
 + To connect to an instance without SSH:
-
 ```bash
 aws ssm start-session --target <instance-id> --region eu-west-1 --profile personal
+```
+
++ To tear everything down and avoid ongoing costs:
+```bash
+terraform plan -destroy -out=tfplan-destroy
+terraform apply "tfplan-destroy"
 ```
 
 ## Stack
