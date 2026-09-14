@@ -2,7 +2,7 @@
 
 + Este proyecto coge la arquitectura de [aws-3-tier-web-architecture](https://github.com/mamoros-dev/aws-3-tier-web-architecture)
 (la que monté a mano en consola en el Proyecto 1) y la recrea entera con Terraform. 
-![Diagrama de la arquitectura](docs/images/diagrama-arquitectura.png)
+![Diagrama de la arquitectura](../images/diagrama-arquitectura.png)
 
 + La idea era aprender IaC sin tener que pelearme a la vez con una arquitectura nueva — así cualquier problema que me saliera sabía que era de Terraform, no de la arquitectura en sí.
 
@@ -85,21 +85,21 @@ terraform apply "tfplan"
 ## Infraestructura desplegada y funcionando
 
 + El estado de Terraform vive en un bucket S3, no en mi disco. Así, si algún día trabajo desde otro portátil, o si esto lo lleva más gente, todos leemos el mismo estado:
-![Bucket de S3 para state Terraform file](docs/images/s3-bucket.png)
+![Bucket de S3 para state Terraform file](../images/s3-bucket.png)
     > Tiene el versionado activado, por si algún día un `apply` deja el estado en mal estado, poder volver a una versión anterior del archivo. También el acceso público bloqueado, porque el estado puede tener datos sensibles.
 
 + Tabla DynamoDB para el locking del estado:
-![Tabla DynamoDB para el locking del estado](docs/images/dynamodb-locks.png)
+![Tabla DynamoDB para el locking del estado](../images/dynamodb-locks.png)
     > Esta tabla es la que evita que dos `apply` se ejecuten a la vez sobre el mismo estado. Cuando lanzo un `apply`, Terraform escribe un lock aquí antes de tocar nada; si alguien (o yo mismo desde otro sitio) intentara aplicar algo al mismo tiempo, le saldría un error de estado bloqueado en vez de corromper el archivo. Solo estoy yo trabajando en esto, pero es el mismo mecanismo que usaría un equipo entero, y quería tenerlo desde el principio en vez de añadirlo después.
 
 + El ALB funcionando en ambas AZs(eu-west-1a/eu-west-1b) con subnet públicas:
-![ALB en ambas AZs](docs/images/alb.png)
+![ALB en ambas AZs](../images/alb.png)
 
 + El Auto Scaling Group manteniendo sus 2 instancias sanas en ambas AZs:
-![Auto Scaling group](docs/images/autoscaling.png)
+![Auto Scaling group](../images/autoscaling.png)
 
 + Y el Target Group confirmando que ambas pasan los health checks del Load Balancer:
-![Target Group con las dos instancias healthy](docs/images/target-group-healthy.png)
+![Target Group con las dos instancias healthy](../images/target-group-healthy.png)
 
 + **Esta vez, toda esta infraestructura la desplegó el pipeline, no yo a mano** — el primer `apply` real disparado por GitHub Actions tras aprobar el Environment `production`.
 
@@ -107,14 +107,14 @@ terraform apply "tfplan"
 
 + Escaneo de Seguridad en Pipeline (Checkov / Trivy):
     - Shift Left Security: Los análisis de seguridad de código IaC se ejecutan en la fase más temprana posible (en la Pull Request) antes de interactuar con la nube de AWS.
-![pipeline Security & Quality Gate DevSecOps](./docs/images/workflow-devsecops.png)  
-![workflow pipeline devsecops](./docs/images/security-qualityscan.png)  
+![pipeline Security & Quality Gate DevSecOps](./../images/workflow-devsecops.png)  
+![workflow pipeline devsecops](./../images/security-qualityscan.png)  
 
 
 + En vez de dejar un `phpinfo()` a secas, hice una página sencilla que muestra en qué zona de disponibilidad está corriendo la instancia que te ha tocado, y un contador de visitas guardado en RDS. 
 + Refrescando varias veces, se ve el ALB repartiendo entre las dos AZs y el contador subiendo de verdad desde la base de datos, no simulado.
-![Web servida desde eu-west-1a](docs/images/web-az1-contador.png)
-![Web servida desde eu-west-1b, contador subiendo](docs/images/web-az2-contador.png)
+![Web servida desde eu-west-1a](../images/web-az1-contador.png)
+![Web servida desde eu-west-1b, contador subiendo](../images/web-az2-contador.png)
 
 + Entrando por Session Manager (sin SSH):
     ```
@@ -125,14 +125,14 @@ terraform apply "tfplan"
     $ psql -h proyecto2-db.cz20sak60eut.eu-west-1.rds.amazonaws.com -U dbadmin -d proyecto2db
     proyecto2db=> SELECT * FROM visits;
     ```
-    ![Sesión SSM en una de las instancias](docs/images/ssm-instancia1.png)
-    ![Sesión SSM en la otra instancia](docs/images/ssm-instancia2.png)
+    ![Sesión SSM en una de las instancias](../images/ssm-instancia1.png)
+    ![Sesión SSM en la otra instancia](../images/ssm-instancia2.png)
 
 + Pipeline CI/CD:
-![Comentario del plan en el Pull Request](docs/images/pr-plan-comment.png)  
-![Pantalla de aprobación del Environment production](docs/images/environment-waiting.png)  
-![Aprobación confirmada del deployment](docs/images/environment-approved.png)  
-![Pantalla workflows git actions](docs/images/git-actions.png)  
+![Comentario del plan en el Pull Request](../images/pr-plan-comment.png)  
+![Pantalla de aprobación del Environment production](../images/environment-waiting.png)  
+![Aprobación confirmada del deployment](../images/environment-approved.png)  
+![Pantalla workflows git actions](../images/git-actions.png)  
 
 ## Verificando que Terraform gestiona todo y no hay nada tocado a mano
 
