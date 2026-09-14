@@ -1,3 +1,5 @@
+# --- Terraform Backend Configuration ---
+# --- Configuración del backend de Terraform ---
 terraform {
   backend "s3" {
     bucket         = "miguel-terraform-state-proyecto2"

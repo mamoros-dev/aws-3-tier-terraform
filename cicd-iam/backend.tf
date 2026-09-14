@@ -1,3 +1,5 @@
+# --- Terraform Backend Configuration with CICD ---
+# --- Configuración del backend de Terraform con CICD ---
 terraform {
   backend "s3" {
     bucket         = "miguel-terraform-state-proyecto2"

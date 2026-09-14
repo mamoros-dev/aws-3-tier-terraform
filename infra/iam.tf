@@ -1,3 +1,4 @@
+# --- Trust Policy: who can assume this role ---
 # --- Trust Policy: quién puede asumir este rol ---
 data "aws_iam_policy_document" "ec2_assume_role" {
   statement {
@@ -12,6 +13,7 @@ data "aws_iam_policy_document" "ec2_assume_role" {
   }
 }
 
+# --- The Role itself ---
 # --- El Role en sí ---
 resource "aws_iam_role" "ec2_ssm" {
   name               = "proyecto2-ec2-ssm-role"
@@ -22,12 +24,14 @@ resource "aws_iam_role" "ec2_ssm" {
   }
 }
 
+# --- Attach the AWS managed policy for SSM ---
 # --- Adjuntamos la política gestionada de AWS para SSM ---
 resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.ec2_ssm.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# --- Instance Profile: the "wrapper" that allows assigning the role to an EC2 ---
 # --- Instance Profile: el "envoltorio" que permite asignar el rol a una EC2 ---
 resource "aws_iam_instance_profile" "ec2_ssm" {
   name = "proyecto2-ec2-ssm-profile"

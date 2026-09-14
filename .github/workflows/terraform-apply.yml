@@ -1,39 +1,50 @@
+# --- Workflow for Terraform Apply ---
+# --- Flujo de trabajo para Terraform Apply ---
 name: Terraform Apply
-
+# --- This workflow is triggered on push events to the main branch, as well as manual execution from the GitHub interface. ---
+# --- Este flujo de trabajo se activa en eventos de push a la rama principal, así como en la ejecución manual desde la interfaz de GitHub. ---
 on:
   push:
     branches:
       - main
     paths:
       - 'infra/**'
-
+# --- Permissions required for the workflow to assume an IAM role and access secrets. ---
+# --- Permisos necesarios para que el flujo de trabajo pueda asumir un rol de IAM y acceder
 permissions:
   id-token: write
   contents: read
-
+# --- Jobs for Terraform Apply ---
+# --- Trabajos para Terraform Apply ---
 jobs:
   apply:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 15
     steps:
+      # --- Checkout the repository ---
+      # --- Hacer checkout del repositorio ---
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      # --- Configure AWS Credentials ---
+      # --- Configurar Credenciales de AWS ---
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/github-actions-terraform-role
           aws-region: eu-west-1
-
+      # --- Setup Terraform ---
+      # --- Configurar Terraform ---
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.15.8"
-
+      # --- Terraform Init and Apply ---
+      # --- Inicialización y Apply de Terraform ---
       - name: Terraform Init (infra)
         run: terraform -chdir=infra init
-
+      # --- Terraform Apply for infra ---
+      # --- Apply de Terraform para infra ---
       - name: Terraform Apply (infra)
         env:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}

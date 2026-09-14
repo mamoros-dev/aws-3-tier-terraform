@@ -18,6 +18,7 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
+# --- Public Subnets (one per AZ) ---
 # --- Subredes públicas (una por AZ) ---
 resource "aws_subnet" "public" {
   count                   = length(var.public_subnet_cidrs)
@@ -31,6 +32,7 @@ resource "aws_subnet" "public" {
   }
 }
 
+# --- Application Private Subnets (one per AZ) ---
 # --- Subredes privadas de aplicación (una por AZ) ---
 resource "aws_subnet" "app" {
   count             = length(var.app_subnet_cidrs)
@@ -43,6 +45,7 @@ resource "aws_subnet" "app" {
   }
 }
 
+# --- Database Private Subnets (one per AZ) ---
 # --- Subredes privadas de datos (una por AZ) ---
 resource "aws_subnet" "db" {
   count             = length(var.db_subnet_cidrs)
@@ -54,6 +57,8 @@ resource "aws_subnet" "db" {
     Name = "proyecto2-db-${var.availability_zones[count.index]}"
   }
 }
+
+# --- Elastic IP for the NAT Gateway ---
 # --- Elastic IP para la NAT Gateway ---
 resource "aws_eip" "nat" {
   domain = "vpc"
@@ -63,6 +68,7 @@ resource "aws_eip" "nat" {
   }
 }
 
+# --- NAT Gateway (single, in the first public subnet) ---
 # --- NAT Gateway (única, en la primera subred pública) ---
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
@@ -75,6 +81,7 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
+# --- Public Route Table ---
 # --- Tabla de rutas pública ---
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -89,12 +96,15 @@ resource "aws_route_table" "public" {
   }
 }
 
+# --- Public Route Table Associations (one per public subnet) ---
+# --- Asociaciones de la tabla de rutas pública (una por subred pública) ---
 resource "aws_route_table_association" "public" {
   count          = length(aws_subnet.public)
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
+# --- Private Route Table (shared by app and db) ---
 # --- Tabla de rutas privada (compartida por app y db) ---
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
@@ -109,6 +119,8 @@ resource "aws_route_table" "private" {
   }
 }
 
+# --- Private Route Table Associations (one per app and db subnet) ---
+# --- Asociaciones de la tabla de rutas privada (una por subred app y db)
 resource "aws_route_table_association" "app" {
   count          = length(aws_subnet.app)
   subnet_id      = aws_subnet.app[count.index].id

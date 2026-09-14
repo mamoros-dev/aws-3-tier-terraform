@@ -1,3 +1,5 @@
+# --- GitHub Actions OIDC Provider and IAM Role for Terraform ---
+# --- Proveedor OIDC de GitHub Actions y Rol IAM para Terraform ---
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url = "https://token.actions.githubusercontent.com"
 
@@ -9,9 +11,12 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
     "6938fd4d98bab03faadb97b34396831e3780aea1"
   ]
 }
-
+# --- IAM Role for GitHub Actions to Assume for Terraform ---
+# --- Rol IAM para que GitHub Actions asuma para Terraform ---
 data "aws_caller_identity" "current" {}
 
+# --- IAM Policy Document for GitHub Actions Trust Relationship ---
+# --- Documento de Política IAM para la Relación de Confianza de GitHub Actions ---
 data "aws_iam_policy_document" "github_actions_trust" {
   statement {
     effect  = "Allow"
@@ -36,11 +41,15 @@ data "aws_iam_policy_document" "github_actions_trust" {
   }
 }
 
+# --- IAM Role and Policy for GitHub Actions to Manage Terraform State and Provision Infrastructure ---
+# --- Rol y Política IAM para que GitHub Actions gestione el estado de Terraform y aprovis
 resource "aws_iam_role" "github_actions" {
   name               = "github-actions-terraform-role"
   assume_role_policy = data.aws_iam_policy_document.github_actions_trust.json
 }
 
+# --- IAM Policy Document for GitHub Actions Permissions ---
+# --- Documento de Política IAM para los Permisos de GitHub Actions ---
 data "aws_iam_policy_document" "github_actions_permissions" {
   statement {
     sid    = "TerraformStateBackend"
@@ -116,6 +125,9 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     resources = ["*"]
   }
 }
+
+# --- Attach the Policy to the IAM Role for GitHub Actions ---
+# --- Adjuntar la Política al Rol IAM para GitHub Actions ---
 resource "aws_iam_role_policy" "github_actions_permissions" {
   name   = "github-actions-terraform-permissions"
   role   = aws_iam_role.github_actions.id
